@@ -1,0 +1,33 @@
+name: Déploiement cPanel via FTP
+
+on:
+  push:
+    branches:
+      - main  # Déclenche le déploiement lors d'un push sur la branche main
+
+jobs:
+  web-deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: 🚚 Récupération du code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: 📂 Déploiement via FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USER }}
+        password: ${{ secrets.FTP_PASSW }}
+        # Dossier local à envoyer ( . pour tout le projet)
+        local-dir: ./
+        # Dossier distant sur cPanel (ex: /public_html/ ou /mon-projet/)
+        server-dir: /home4/sc3marvensg/lions-control.lions-sarl.com/
+        # Optionnel : exclure certains fichiers
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          .env
