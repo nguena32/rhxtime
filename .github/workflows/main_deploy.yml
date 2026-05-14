@@ -22,7 +22,7 @@ jobs:
         username: ${{ secrets.FTP_USER }}
         password: ${{ secrets.FTP_PASSW }}
         local-dir: ./
-        server-dir: /home/sc4marvensg/public_html/rhxtimes.com/
+        server-dir: ./
         # SYNC TOTALE : Supprime les fichiers sur le serveur qui n'existent plus localement
         # ATTENTION : À n'utiliser que si GitHub est votre seule source de vérité.
         dangerous-clean-remote-all: false 
