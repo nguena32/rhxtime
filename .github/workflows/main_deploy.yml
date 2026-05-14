@@ -1,0 +1,33 @@
+name: Mise à jour Totale Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Sync Mirror
+    runs-on: ubuntu-latest
+    steps:
+    - name: 📥 Récupération du code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 🚀 Synchronisation FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USER }}
+        password: ${{ secrets.FTP_PASSW }}
+        local-dir: ./
+        server-dir: /home/sc4marvensg/public_html/rhxtimes.com/
+        # SYNC TOTALE : Supprime les fichiers sur le serveur qui n'existent plus localement
+        # ATTENTION : À n'utiliser que si GitHub est votre seule source de vérité.
+        dangerous-clean-remote-all: false 
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          .env
