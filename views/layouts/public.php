@@ -22,7 +22,7 @@ $isLoggedIn = isset($_SESSION['admin_id']) || isset($_SESSION['user_id']);
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>RHXtimes 2026 — Le pointage qui ne ment pas</title>
+  <title>RHXtimes — Le pointage qui ne ment pas</title>
   <meta name="description"
     content="Solution SaaS de pointage GPS zéro hardware pour BTP, Sécurité et Multi-sites en Afrique.">
   <link rel="manifest" href="manifest.json">

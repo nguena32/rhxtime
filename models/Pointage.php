@@ -177,6 +177,11 @@ class Pointage {
         $justifsByUsers = [];
         while($j = $stmtJustifs->fetch()) $justifsByUsers[$j['user_id']][] = $j['type'];
 
+        // ── NOUVEAU : Récupérer la date du TOUT PREMIER pointage de chaque employé ──
+        $stmtFirstPtgs = $this->pdo->prepare("SELECT user_id, MIN(DATE(heure_pointage)) as first_date FROM pointages WHERE entreprise_id = ? GROUP BY user_id");
+        $stmtFirstPtgs->execute([$this->entreprise_id]);
+        $firstPtgDates = $stmtFirstPtgs->fetchAll(PDO::FETCH_KEY_PAIR);
+
         $results = [];
         $isTodayOrPast = strtotime($date) <= strtotime(date('Y-m-d'));
 
@@ -188,6 +193,7 @@ class Pointage {
 
             if(!$isScheduled && !$hasPtgs) continue; 
 
+            $firstPtgDate = $firstPtgDates[$u['id']] ?? null;
             $arr = $hasPtgs ? $pointagesByUsers[$u['id']]['ARRIVEE'] : null;
             $dep = $hasPtgs ? $pointagesByUsers[$u['id']]['DEPART'] : null;
             $justifs = $justifsByUsers[$u['id']] ?? [];
@@ -216,7 +222,13 @@ class Pointage {
                 }
             } else { 
                 if ($isScheduled && $isTodayOrPast) {
-                    if (in_array('ABSENCE', $justifs)) {
+                    // Si la date demandée est AVANT le premier pointage historique de l'employé
+                    if ($firstPtgDate && $date < $firstPtgDate) {
+                        $statut = "AVANT ACTIVATION"; $statut_color = "#94a3b8";
+                    } else if (!$firstPtgDate) {
+                        // Cas où l'employé n'a encore JAMAIS pointé du tout
+                        $statut = "AVANT ACTIVATION"; $statut_color = "#94a3b8";
+                    } else if (in_array('ABSENCE', $justifs)) {
                         $statut = "Absence justifiée"; $statut_color = "#3b82f6";
                     } else if ($date == date('Y-m-d') && date('H:i:s') < date('H:i:s', strtotime($plan['heure_debut']))) {
                         $statut = "À venir"; $statut_color = "#64748b";
@@ -294,6 +306,11 @@ class Pointage {
             $justifsByDateUser[$j['date_justif']][$j['user_id']][] = $j['type'];
         }
 
+        // ── NOUVEAU : Récupérer la date du TOUT PREMIER pointage de chaque employé ──
+        $stmtFirstPtgs = $this->pdo->prepare("SELECT user_id, MIN(DATE(heure_pointage)) as first_date FROM pointages WHERE entreprise_id = ? GROUP BY user_id");
+        $stmtFirstPtgs->execute([$this->entreprise_id]);
+        $firstPtgDates = $stmtFirstPtgs->fetchAll(PDO::FETCH_KEY_PAIR);
+
         // 5. Génération du rapport via traitement mémoire (PHP)
         $start = new DateTime($date_start);
         $end = new DateTime($date_end);
@@ -322,6 +339,7 @@ class Pointage {
                 $isScheduled = ($plan && !$plan['is_repos']);
                 $ptgs = $pointagesByDateUser[$dateStr][$uid] ?? null;
                 $hasPtgs = ($ptgs !== null);
+                $firstPtgDate = $firstPtgDates[$uid] ?? null;
 
                 // On n'affiche que les journées planifiées OU celles où il y a eu un mouvement
                 if(!$isScheduled && !$hasPtgs) continue;
@@ -354,7 +372,11 @@ class Pointage {
                     }
                 } else { 
                     if ($isScheduled && $isTodayOrPast) {
-                        if (in_array('ABSENCE', $justifs)) {
+                        if ($firstPtgDate && $dateStr < $firstPtgDate) {
+                            $statut = "AVANT ACTIVATION"; $statut_color = "#94a3b8";
+                        } else if (!$firstPtgDate) {
+                            $statut = "AVANT ACTIVATION"; $statut_color = "#94a3b8";
+                        } else if (in_array('ABSENCE', $justifs)) {
                             $statut = "Absence justifiée"; $statut_color = "#3b82f6";
                         } else if ($dateStr == $today && date('H:i:s') < date('H:i:s', strtotime($plan['heure_debut']))) {
                             $statut = "À venir"; $statut_color = "#64748b";
@@ -429,6 +451,11 @@ class Pointage {
             $allPointages[$p['user_id']][] = $p;
         }
 
+        // ── NOUVEAU : Récupérer la date du TOUT PREMIER pointage (historique global) ──
+        $stmtFirstGlob = $this->pdo->prepare("SELECT user_id, MIN(DATE(heure_pointage)) as first_date FROM pointages WHERE entreprise_id = ? GROUP BY user_id");
+        $stmtFirstGlob->execute([$this->entreprise_id]);
+        $allFirstDates = $stmtFirstGlob->fetchAll(PDO::FETCH_KEY_PAIR);
+
         // 3. Pré-charger tous les ajustements manuels du mois
         $stmtAdj = $this->pdo->prepare("SELECT * FROM payroll_adjustments WHERE entreprise_id = ? AND month = ? AND year = ?");
         $stmtAdj->execute([$this->entreprise_id, $month, $year]);
@@ -463,23 +490,16 @@ class Pointage {
             $lieuPlanning = $plannings[$lid] ?? [];
             $userJustifs = $allJustifs[$u['id']] ?? [];
             
-            // --- LOGIQUE SMART START : Ignorer absences avant le 1er pointage (Mois de recrutement) ---
             $isCreationMonth = (!empty($u['created_at']) && date('m', strtotime($u['created_at'])) == $month && date('Y', strtotime($u['created_at'])) == $year);
-            $firstPtgDate = null;
-            if (!empty($userPointages)) {
-                $days = array_column($userPointages, 'jour');
-                $firstPtgDate = min($days);
-            }
+            $firstPtgDate = $allFirstDates[$u['id']] ?? null;
 
             for ($d=1; $d <= $daysInMonth; $d++) {
                 $dateStr = sprintf('%04d-%02d-%02d', $year, $month, $d);
                 if (strtotime($dateStr) > time()) continue; // Skip days in the future
 
-                // Si c'est le mois de création, on ignore tout avant le 1er geste de l'employé
-                if ($isCreationMonth) {
-                    if ($firstPtgDate === null || $dateStr < $firstPtgDate) {
-                        continue;
-                    }
+                // Ignorer les absences si on est avant le tout premier pointage de l'histoire de l'employé
+                if ($firstPtgDate === null || $dateStr < $firstPtgDate) {
+                    continue;
                 }
                 
                 $dayOfWeek = date('N', strtotime($dateStr));
