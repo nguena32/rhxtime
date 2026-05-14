@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Réparation de l'application</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 40px 20px; background: #f8fafc; color: #1e293b; }
+        .box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        button { background: #4f46e5; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; margin-top: 15px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Déblocage du système</h2>
+        <p>Nettoyage du cache bloqué sur votre appareil...</p>
+        <div id="loading" class="spinner"></div>
+        <div id="status">Veuillez patienter.</div>
+    </div>
+
+    <script>
+        function cleanup() {
+            var statusDiv = document.getElementById('status');
+            var loadingDiv = document.getElementById('loading');
+            
+            if ('serviceWorker' in navigator) {
+                // Forcer l'annulation de tous les Services Workers plantés
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    var promises = [];
+                    for(let registration of registrations) {
+                        promises.push(registration.unregister());
+                    }
+                    
+                    return Promise.all(promises).then(function() {
+                        statusDiv.innerHTML = "<span style='color: #10b981; font-weight: bold;'>✅ Nettoyage terminé avec succès !</span><br><br>Vous pouvez maintenant cliquer sur le bouton ci-dessous.";
+                        loadingDiv.style.display = 'none';
+                        statusDiv.innerHTML += "<br><button onclick='window.location.href=\"index.php\"'>Retourner à la connexion</button>";
+                        
+                        // Nettoyer aussi les caches locaux pour être sûr
+                        if ('caches' in window) {
+                            caches.keys().then(function(names) {
+                                for (let name of names) {
+                                    caches.delete(name);
+                                }
+                            });
+                        }
+                    });
+                }).catch(function(err) {
+                    loadingDiv.style.display = 'none';
+                    statusDiv.innerHTML = "<span style='color: red;'>Erreur détectée : " + err + "</span>";
+                });
+            } else {
+                loadingDiv.style.display = 'none';
+                statusDiv.innerHTML = "Aucun système hors-ligne sur cet appareil.<br><br><button onclick='window.location.href=\"index.php\"'>Aller à la page d'accueil</button>";
+            }
+        }
+
+        // Lancer le nettoyage après 1 seconde pour être sûr que l'UI a chargé
+        setTimeout(cleanup, 1000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# RHtimes - Security Hardening
+
+# 1. Empêcher l'accès aux fichiers sensibles
+<FilesMatch "^\.env|composer\.json|composer\.lock|cache/.*\.json$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# 2. Empêcher le listing des répertoires
+Options -Indexes
+
+# 3. Paramètres PHP (Si autorisés par l'hébergeur)
+<IfModule mod_php7.c>
+    php_flag display_errors Off
+    php_value max_execution_time 300
+</IfModule>
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_value max_execution_time 300
+</IfModule>
+
+# 4. En-têtes de sécurité
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

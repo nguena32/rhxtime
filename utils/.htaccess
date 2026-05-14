@@ -1,0 +1,8 @@
+# Interdire l'exécution de scripts PHP dans ce dossier
+<FilesMatch "\.(php|php5|php4|phtml|pl|py|jsp|asp|sh|cgi)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Désactiver le parcours des répertoires (Directory Listing)
+Options -Indexes

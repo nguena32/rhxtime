@@ -1,0 +1,14 @@
+# Ignore Environment files
+.env
+.env.*
+
+# Ignore unsafe or non-essential third-party scripts
+themes_landing/php/mail.php
+themes_landing/php/
+thems_new_rhxtimes/
+
+# Ignore IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
