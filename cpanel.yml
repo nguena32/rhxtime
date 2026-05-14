@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/sc4marvensg/public_html/rhxtimes.com/
+    - /bin/cp -R * $DEPLOYPATH
