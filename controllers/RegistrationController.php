@@ -44,8 +44,8 @@ class RegistrationController {
         $stmtIp->execute([$ip]);
         $count = $stmtIp->fetchColumn();
 
-        if ($count >= 2) {
-             Security::logAnomaly("Tentative d'inscription multiple (Limite de 2 atteinte) : $ip");
+        if ($count >= 5) {
+             Security::logAnomaly("Tentative d'inscription multiple (Limite de 5 atteinte) : $ip");
              header('Location: index.php?page=register&error=' . urlencode("Limite d'inscription atteinte pour aujourd'hui, patientez 24h avant de créer à nouveau, Merci"));
              exit;
         }
@@ -60,10 +60,6 @@ class RegistrationController {
         // ── Validation de la force du mot de passe ──
         if (strlen($password) < 8) {
             header('Location: index.php?page=register&error=' . urlencode('Le mot de passe doit contenir au moins 8 caractères.'));
-            exit;
-        }
-        if (!preg_match('/[A-Z]/', $password) || !preg_match('/[0-9]/', $password)) {
-            header('Location: index.php?page=register&error=' . urlencode('Le mot de passe doit contenir au moins une majuscule et un chiffre.'));
             exit;
         }
 
